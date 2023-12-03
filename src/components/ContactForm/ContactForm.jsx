@@ -1,5 +1,8 @@
 import React from 'react';
 import * as Yup from 'yup';
+import { useSelector, useDispatch } from 'react-redux';
+import { getContacts } from '../../redux/selectors';
+import { addContact } from '../../redux/contactsSlice';
 import { Formik, Form, ErrorMessage } from 'formik';
 import PropTypes from 'prop-types';
 import Notiflix from 'notiflix';
@@ -23,25 +26,23 @@ const validationSchema = Yup.object().shape({
     .max(15, 'Phone number should not exceed 15 digits')
     .required('Phone number is required'),
 });
+const initialValues = {
+  name: '',
+  number: '',
+};
+const ContactForm = () => {
+  const dispatch = useDispatch();
+  const contacts = useSelector(getContacts);
 
-const ContactForm = ({ onAddContact, contacts }) => {
-  const initialValues = {
-    name: '',
-    number: '',
-  };
-
-  const onSubmit = (values, { resetForm }) => {
-    const { name } = values;
-    if (
-      contacts.some(
-        contact => contact.name.toLowerCase() === name.toLowerCase()
-      )
-    ) {
-      Notiflix.Notify.failure(`${name} is already in contacts!`);
-    } else {
-      onAddContact(values.name, values.number);
-      resetForm();
+  const onSubmit = (values, action) => {
+    const isInContacts = contacts.some(
+      ({ name }) => name.toLowerCase() === values.name.toLowerCase()
+    );
+    if (isInContacts) {
+      return Notiflix.Notify.failure(`${values.name} is already in contacts!`);
     }
+    dispatch(addContact(values));
+    action.resetForm();
   };
 
   return (
@@ -75,8 +76,7 @@ const ContactForm = ({ onAddContact, contacts }) => {
 };
 
 ContactForm.propTypes = {
-  onAddContact: PropTypes.func.isRequired,
-  contacts: PropTypes.arrayOf(PropTypes.object).isRequired,
+  onSubmit: PropTypes.func,
 };
 
 export default ContactForm;
